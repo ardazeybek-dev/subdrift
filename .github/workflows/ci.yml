@@ -42,3 +42,11 @@ jobs:
           ffmpeg -v error -i e2e/movie.wav -c:a libopus e2e/movie.opus
           dotnet run -c Release --project src/Subdrift.Cli -- sync e2e/movie.es.srt e2e/movie.opus --json -o e2e/out.srt | tee result.json
           python3 -c "import json; r=json.load(open('result.json')); assert r['coverageAfter'] > 0.9, r"
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t subdrift .
+      - name: Run the demo inside the image
+        run: docker run --rm -v "$PWD:/work" subdrift demo e2e
