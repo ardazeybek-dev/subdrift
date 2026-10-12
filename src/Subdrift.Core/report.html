@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>subdrift report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0e13;
+  --surface: #11171f;
+  --surface-2: #161e28;
+  --border: #222c38;
+  --text: #e6edf3;
+  --muted: #8592a0;
+  --faint: #3a4654;
+  --speech: #5b8def;
+  --original: #f2766b;
+  --aligned: #2ec4a6;
+  --accent: #2ec4a6;
+  --warn: #f2b84b;
+  --grid: rgba(255,255,255,0.05);
+  --mask: rgba(5,8,12,0.55);
+  --shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 12px 32px -18px rgba(0,0,0,0.6);
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f5f7fa;
+    --surface: #ffffff;
+    --surface-2: #f0f3f7;
+    --border: #dfe5ec;
+    --text: #15202b;
+    --muted: #5c6b7a;
+    --faint: #c3ccd6;
+    --speech: #3d6fd9;
+    --original: #e0554a;
+    --aligned: #12a387;
+    --accent: #12a387;
+    --warn: #c98a16;
+    --grid: rgba(0,0,0,0.05);
+    --mask: rgba(245,247,250,0.72);
+    --shadow: 0 12px 32px -22px rgba(20,30,50,0.35);
+    color-scheme: light;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.5 Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1180px; margin: 0 auto; padding: 32px 20px 48px; }
+.mono { font-family: "JetBrains Mono", ui-monospace, Consolas, monospace; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand svg { flex: none; }
+.brand h1 { font-size: 20px; margin: 0; letter-spacing: -0.02em; }
+.brand p { margin: 0; color: var(--muted); font-size: 13px; }
+.files { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12.5px; }
+.chip { background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip b { color: var(--muted); font-weight: 500; margin-right: 6px; }
+.arrow { color: var(--muted); }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
+.card, .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); }
+.card { padding: 16px 18px; }
+.card .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+.card .value { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; margin-top: 4px; }
+.card .sub { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+.up { color: var(--aligned); }
+.panel { padding: 18px; margin-bottom: 18px; }
+.panel h2 { font-size: 14px; margin: 0; font-weight: 600; }
+.panel .hint { color: var(--muted); font-size: 12.5px; margin: 2px 0 0; }
+.panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); align-items: center; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.tools { display: flex; gap: 6px; }
+button {
+  background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 8px;
+  font: inherit; font-size: 12.5px; padding: 5px 10px; cursor: pointer;
+}
+button:hover { border-color: var(--faint); }
+.canvas-box { position: relative; }
+canvas { display: block; width: 100%; }
+#timeline { height: 250px; cursor: grab; }
+#timeline.dragging { cursor: grabbing; }
+#overview { height: 44px; margin-top: 8px; border-radius: 8px; cursor: pointer; }
+#tip {
+  position: absolute; pointer-events: none; background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 8px 10px; font-size: 12.5px; max-width: 320px; opacity: 0; transition: opacity .12s;
+  box-shadow: var(--shadow); z-index: 2;
+}
+#tip .t { color: var(--muted); font-size: 11.5px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.grid2 .panel { margin-bottom: 18px; }
+#drift, #curve { height: 220px; }
+.cands { display: flex; flex-direction: column; gap: 7px; }
+.cand { display: grid; grid-template-columns: 150px 1fr 64px; gap: 10px; align-items: center; font-size: 12.5px; }
+.cand .bar { height: 8px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+.cand .bar span { display: block; height: 100%; background: var(--faint); border-radius: 99px; }
+.cand.win .bar span { background: var(--accent); }
+.cand.win { font-weight: 600; }
+.cand .pct { text-align: right; color: var(--muted); }
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+th { text-align: left; color: var(--muted); font-weight: 500; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+td { padding: 7px 8px; border-bottom: 1px solid var(--border); }
+tr:last-child td { border-bottom: 0; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; }
+.scroll { max-height: 260px; overflow: auto; }
+footer { color: var(--muted); font-size: 12px; text-align: center; margin-top: 10px; }
+footer a { color: inherit; }
+@media (max-width: 860px) {
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .grid2 { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .wrap { padding: 20px 16px 36px; }
+  .card .value { font-size: 21px; }
+  .cand { grid-template-columns: 110px 1fr 54px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">
+        <rect width="40" height="40" rx="11" fill="var(--surface-2)" stroke="var(--border)"/>
+        <g stroke-linecap="round" stroke-width="3">
+          <line x1="9" y1="15" x2="21" y2="15" stroke="var(--original)"/>
+          <line x1="25" y1="15" x2="31" y2="15" stroke="var(--original)" opacity=".55"/>
+          <line x1="12" y1="25" x2="24" y2="25" stroke="var(--aligned)"/>
+          <line x1="28" y1="25" x2="32" y2="25" stroke="var(--aligned)" opacity=".55"/>
+        </g>
+      </svg>
+      <div>
+        <h1>subdrift</h1>
+        <p id="generated">alignment report</p>
+      </div>
+    </div>
+    <div class="files">
+      <span class="chip mono"><b>sub</b><span id="f-sub"></span></span>
+      <span class="arrow">→</span>
+      <span class="chip mono"><b id="f-kind">ref</b><span id="f-ref"></span></span>
+    </div>
+  </header>
+
+  <section class="stats">
+    <div class="card"><div class="label">Offset</div><div class="value mono" id="s-offset"></div><div class="sub">constant shift found by cross-correlation</div></div>
+    <div class="card"><div class="label">Framerate</div><div class="value" id="s-fps"></div><div class="sub" id="s-scale"></div></div>
+    <div class="card"><div class="label">Scenes</div><div class="value" id="s-seg"></div><div class="sub" id="s-seg-sub"></div></div>
+    <div class="card"><div class="label">Subtitles on speech</div><div class="value"><span id="s-after"></span></div><div class="sub" id="s-before"></div></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <h2>Timeline</h2>
+        <p class="hint">Scroll to zoom · drag to pan · hover a cue for its text</p>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--speech)"></i>Speech in reference</span>
+        <span><i style="background:var(--original)"></i>Original</span>
+        <span><i style="background:var(--aligned)"></i>Aligned</span>
+        <div class="tools">
+          <button id="zin" aria-label="Zoom in">+</button>
+          <button id="zout" aria-label="Zoom out">−</button>
+          <button id="zfit">Fit</button>
+        </div>
+      </div>
+    </div>
+    <div class="canvas-box">
+      <canvas id="timeline"></canvas>
+      <div id="tip"></div>
+    </div>
+    <canvas id="overview"></canvas>
+  </section>
+
+  <div class="grid2">
+    <section class="panel">
+      <div class="panel-head"><div><h2>Correction over time</h2><p class="hint">Slope = framerate drift · steps = cut scenes</p></div></div>
+      <canvas id="drift"></canvas>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><div><h2>Offset search</h2><p class="hint">Share of subtitle time on speech for every candidate offset</p></div></div>
+      <canvas id="curve"></canvas>
+    </section>
+  </div>
+
+  <div class="grid2">
+    <section class="panel">
+      <div class="panel-head"><div><h2>Framerate candidates</h2><p class="hint">Global score per ratio · close contenders are re-checked after scene refinement</p></div></div>
+      <div class="cands" id="cands"></div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><div><h2>Scenes</h2><p class="hint">Runs of cues that share one correction</p></div></div>
+      <div class="scroll"><table><thead><tr><th>Cues</th><th>Starts at</th><th>Extra shift</th></tr></thead><tbody id="segs"></tbody></table></div>
+    </section>
+  </div>
+
+  <footer>Generated by <a href="https://github.com/ardazeybek-dev/subdrift">subdrift</a> · <span id="elapsed"></span></footer>
+</div>
+
+<script>
+const D = /*__SUBDRIFT_DATA__*/null;
+(function () {
+  if (!D) { document.body.innerHTML = '<p style="padding:40px">No report data.</p>'; return; }
+  const $ = id => document.getElementById(id);
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const pct = x => (x * 100).toFixed(1) + '%';
+  const signed = (x, d = 3) => (x >= 0 ? '+' : '−') + Math.abs(x).toFixed(d) + ' s';
+  const clock = s => {
+    s = Math.max(0, s);
+    const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, sec = s % 60;
+    const mm = String(m).padStart(2, '0'), ss = sec.toFixed(1).padStart(4, '0');
+    return h ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+  };
+  const base = p => p.split(/[\\/]/).pop();
+
+  // ---------- header + stats
+  $('f-sub').textContent = base(D.meta.subtitle);
+  $('f-ref').textContent = base(D.meta.reference);
+  $('f-kind').textContent = D.meta.referenceKind;
+  $('generated').textContent = 'alignment report · ' + D.meta.generated;
+  $('elapsed').textContent = `${D.original.length} cues aligned in ${D.meta.elapsedMs} ms`;
+  $('s-offset').textContent = signed(D.offset);
+  $('s-fps').textContent = D.scale === 1 ? 'Unchanged' : D.scaleLabel;
+  $('s-scale').textContent = D.scale === 1 ? 'no conversion detected' : `time scale × ${D.scale.toFixed(5)}`;
+  const cuts = D.segments.length - 1;
+  $('s-seg').textContent = D.segments.length;
+  $('s-seg-sub').textContent = D.segments.length === 1 ? 'one continuous timing' : `${cuts} cut${cuts > 1 ? 's' : ''} detected`;
+  $('s-after').innerHTML = `<span class="up">${pct(D.coverageAfter)}</span>`;
+  $('s-before').textContent = `was ${pct(D.coverageBefore)} before alignment`;
+
+  // ---------- canvas helpers
+  function setup(canvas) {
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    return { ctx, w, h };
+  }
+  function roundRect(ctx, x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+  function niceStep(span, px, minPx) {
+    const raw = span / Math.max(1, px / minPx);
+    const steps = [0.1, 0.2, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600];
+    return steps.find(s => s >= raw) || 3600;
+  }
+
+  // ---------- timeline
+  const tl = $('timeline'), ov = $('overview'), tip = $('tip');
+  const view = { t0: 0, t1: Math.min(D.duration, 90) };
+  const lanes = { axis: 18, speechTop: 30, speechH: 64, origTop: 118, cueH: 22, alignTop: 196 };
+  const actRate = 10;
+
+  function clampView() {
+    const span = Math.max(2, Math.min(D.duration, view.t1 - view.t0));
+    if (view.t0 < 0) view.t0 = 0;
+    if (view.t0 + span > D.duration) view.t0 = Math.max(0, D.duration - span);
+    view.t1 = view.t0 + span;
+  }
+
+  function drawTimeline() {
+    const { ctx, w, h } = setup(tl);
+    const span = view.t1 - view.t0;
+    const X = t => (t - view.t0) / span * w;
+
+    // grid + axis
+    const step = niceStep(span, w, 90);
+    ctx.font = '11px "JetBrains Mono", monospace';
+    ctx.textBaseline = 'middle';
+    for (let t = Math.ceil(view.t0 / step) * step; t <= view.t1; t += step) {
+      const x = Math.round(X(t)) + 0.5;
+      ctx.strokeStyle = css('--grid'); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x, lanes.axis + 6); ctx.lineTo(x, h); ctx.stroke();
+      ctx.fillStyle = css('--muted'); ctx.fillText(clock(t), x + 4, lanes.axis - 6);
+    }
+
+    // lane labels
+    ctx.fillStyle = css('--muted'); ctx.font = '11px Inter, sans-serif';
+    ctx.fillText('ORIGINAL', 6, lanes.origTop - 9);
+    ctx.fillText('ALIGNED', 6, lanes.alignTop - 9);
+
+    // speech activity
+    const mid = lanes.speechTop + lanes.speechH / 2;
+    const speech = css('--speech');
+    ctx.fillStyle = speech;
+    for (let px = 0; px < w; px++) {
+      const a = Math.floor((view.t0 + px / w * span) * actRate);
+      const b = Math.max(a + 1, Math.floor((view.t0 + (px + 1) / w * span) * actRate));
+      let v = -100;
+      for (let i = a; i < b && i < D.activity.length; i++) if (D.activity[i] > v) v = D.activity[i];
+      if (v > 0) {
+        const hh = (v / 100) * lanes.speechH / 2;
+        ctx.globalAlpha = 0.25 + 0.6 * (v / 100);
+        ctx.fillRect(px, mid - hh, 1, hh * 2);
+      }
+    }
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = css('--faint'); ctx.beginPath(); ctx.moveTo(0, mid + 0.5); ctx.lineTo(w, mid + 0.5); ctx.stroke();
+
+    // connectors
+    ctx.strokeStyle = css('--faint'); ctx.lineWidth = 1;
+    D.original.forEach((c, i) => {
+      const s2 = c[0] + D.corrections[i];
+      if (Math.max(c[1], s2 + (c[1] - c[0])) < view.t0 || Math.min(c[0], s2) > view.t1) return;
+      ctx.beginPath();
+      ctx.moveTo(X(c[0]), lanes.origTop + lanes.cueH);
+      ctx.bezierCurveTo(X(c[0]), lanes.origTop + lanes.cueH + 30, X(s2), lanes.alignTop - 30, X(s2), lanes.alignTop);
+      ctx.stroke();
+    });
+
+    const drawCues = (cues, top, color) => {
+      ctx.fillStyle = color;
+      for (const c of cues) {
+        if (c[1] < view.t0 || c[0] > view.t1) continue;
+        const x = X(c[0]), cw = Math.max(2, X(c[1]) - x);
+        roundRect(ctx, x, top, cw, lanes.cueH, 5); ctx.fill();
+        if (cw > 60) {
+          ctx.save(); ctx.beginPath(); ctx.rect(x + 6, top, cw - 12, lanes.cueH); ctx.clip();
+          ctx.fillStyle = 'rgba(255,255,255,0.92)'; ctx.font = '11.5px Inter, sans-serif';
+          ctx.fillText(c[2].replace(/\n/g, ' '), x + 7, top + lanes.cueH / 2 + 1);
+          ctx.restore(); ctx.fillStyle = color;
+        }
+      }
+    };
+    drawCues(D.original, lanes.origTop, css('--original'));
+    drawCues(D.aligned, lanes.alignTop, css('--aligned'));
+    drawOverview();
+  }
+
+  let overviewCache = null;
+  function drawOverview() {
+    const { ctx, w, h } = setup(ov);
+    if (!overviewCache || overviewCache.w !== w) {
+      const off = document.createElement('canvas');
+      const dpr = window.devicePixelRatio || 1;
+      off.width = Math.round(w * dpr); off.height = Math.round(h * dpr);
+      const o = off.getContext('2d'); o.setTransform(dpr, 0, 0, dpr, 0, 0);
+      o.fillStyle = css('--surface-2'); o.fillRect(0, 0, w, h);
+      o.fillStyle = css('--speech'); o.globalAlpha = 0.55;
+      const per = D.activity.length / w;
+      for (let px = 0; px < w; px++) {
+        let v = -100;
+        for (let i = Math.floor(px * per); i < Math.floor((px + 1) * per); i++) if (D.activity[i] > v) v = D.activity[i];
+        if (v > 0) o.fillRect(px, 6, 1, (h - 12) / 2 - 2);
+      }
+      o.globalAlpha = 1; o.fillStyle = css('--aligned');
+      for (const c of D.aligned) o.fillRect(c[0] / D.duration * w, h / 2 + 2, Math.max(1, (c[1] - c[0]) / D.duration * w), (h - 12) / 2 - 2);
+      overviewCache = { w, img: off };
+    }
+    ctx.drawImage(overviewCache.img, 0, 0, w, h);
+    const x0 = view.t0 / D.duration * w, x1 = view.t1 / D.duration * w;
+    ctx.fillStyle = css('--mask');
+    ctx.fillRect(0, 0, x0, h); ctx.fillRect(x1, 0, w - x1, h);
+    ctx.strokeStyle = css('--text'); ctx.lineWidth = 1.5;
+    roundRect(ctx, x0 + 0.75, 0.75, Math.max(4, x1 - x0) - 1.5, h - 1.5, 6); ctx.stroke();
+  }
+
+  function zoom(factor, anchorFrac = 0.5) {
+    const span = view.t1 - view.t0, anchor = view.t0 + span * anchorFrac;
+    const ns = Math.max(2, Math.min(D.duration, span * factor));
+    view.t0 = anchor - ns * anchorFrac; view.t1 = view.t0 + ns;
+    clampView(); drawTimeline();
+  }
+  tl.addEventListener('wheel', e => {
+    e.preventDefault();
+    const r = tl.getBoundingClientRect();
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+      const span = view.t1 - view.t0;
+      view.t0 += e.deltaX / r.width * span; view.t1 += e.deltaX / r.width * span; clampView(); drawTimeline();
+    } else zoom(e.deltaY > 0 ? 1.18 : 1 / 1.18, (e.clientX - r.left) / r.width);
+  }, { passive: false });
+  let drag = null;
+  tl.addEventListener('pointerdown', e => { drag = { x: e.clientX, t0: view.t0 }; tl.classList.add('dragging'); tl.setPointerCapture(e.pointerId); });
+  tl.addEventListener('pointerup', () => { drag = null; tl.classList.remove('dragging'); });
+  tl.addEventListener('pointermove', e => {
+    const r = tl.getBoundingClientRect(), span = view.t1 - view.t0;
+    if (drag) {
+      const dt = (e.clientX - drag.x) / r.width * span;
+      view.t0 = drag.t0 - dt; view.t1 = view.t0 + span; clampView(); drawTimeline(); tip.style.opacity = 0; return;
+    }
+    const x = e.clientX - r.left, y = e.clientY - r.top, t = view.t0 + x / r.width * span;
+    const lane = y >= lanes.origTop && y <= lanes.origTop + lanes.cueH ? D.original
+      : y >= lanes.alignTop && y <= lanes.alignTop + lanes.cueH ? D.aligned : null;
+    const c = lane && lane.find(c => t >= c[0] && t <= c[1]);
+    if (!c) { tip.style.opacity = 0; return; }
+    tip.innerHTML = `<div class="t mono">${clock(c[0])} → ${clock(c[1])}</div>`;
+    const body = document.createElement('div'); body.textContent = c[2]; tip.appendChild(body);
+    tip.style.left = Math.min(x + 12, r.width - 330) + 'px'; tip.style.top = (y + 14) + 'px'; tip.style.opacity = 1;
+  });
+  tl.addEventListener('pointerleave', () => { tip.style.opacity = 0; });
+  const seek = e => {
+    const r = ov.getBoundingClientRect(), span = view.t1 - view.t0;
+    view.t0 = (e.clientX - r.left) / r.width * D.duration - span / 2; view.t1 = view.t0 + span; clampView(); drawTimeline();
+  };
+  let ovDrag = false;
+  ov.addEventListener('pointerdown', e => { ovDrag = true; ov.setPointerCapture(e.pointerId); seek(e); });
+  ov.addEventListener('pointermove', e => { if (ovDrag) seek(e); });
+  ov.addEventListener('pointerup', () => { ovDrag = false; });
+  $('zin').onclick = () => zoom(1 / 1.6);
+  $('zout').onclick = () => zoom(1.6);
+  $('zfit').onclick = () => { view.t0 = 0; view.t1 = D.duration; drawTimeline(); };
+
+  // ---------- correction over time
+  function drawDrift() {
+    const { ctx, w, h } = setup($('drift'));
+    const pad = { l: 52, r: 12, t: 10, b: 24 };
+    const ys = D.corrections;
+    let lo = Math.min(0, ...ys), hi = Math.max(0, ...ys);
+    const m = Math.max(0.5, (hi - lo) * 0.12); lo -= m; hi += m;
+    const X = t => pad.l + t / D.duration * (w - pad.l - pad.r);
+    const Y = v => pad.t + (hi - v) / (hi - lo) * (h - pad.t - pad.b);
+    ctx.font = '11px "JetBrains Mono", monospace'; ctx.fillStyle = css('--muted'); ctx.textBaseline = 'middle';
+    const ystep = niceStep(hi - lo, h, 34);
+    for (let v = Math.ceil(lo / ystep) * ystep; v <= hi; v += ystep) {
+      ctx.strokeStyle = Math.abs(v) < 1e-9 ? css('--faint') : css('--grid');
+      ctx.beginPath(); ctx.moveTo(pad.l, Math.round(Y(v)) + 0.5); ctx.lineTo(w - pad.r, Math.round(Y(v)) + 0.5); ctx.stroke();
+      ctx.fillText((v > 0 ? '+' : '') + (+v.toFixed(1)) + 's', 4, Y(v));
+    }
+    const xstep = niceStep(D.duration, w, 110);
+    ctx.textBaseline = 'alphabetic';
+    for (let t = 0; t <= D.duration; t += xstep) ctx.fillText(clock(t).replace(/\.\d$/, ''), X(t) - 10, h - 6);
+    ctx.strokeStyle = css('--aligned'); ctx.lineWidth = 2; ctx.beginPath();
+    D.original.forEach((c, i) => { const x = X(c[0]), y = Y(ys[i]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+    ctx.stroke();
+    ctx.fillStyle = css('--aligned');
+    D.original.forEach((c, i) => { ctx.beginPath(); ctx.arc(X(c[0]), Y(ys[i]), 2.2, 0, 7); ctx.fill(); });
+  }
+
+  // ---------- offset search curve
+  function drawCurve() {
+    const { ctx, w, h } = setup($('curve'));
+    const pad = { l: 44, r: 12, t: 14, b: 24 };
+    const [a, b] = D.curveRange, ys = D.curve;
+    const lo = Math.min(...ys), hi = Math.max(...ys);
+    const X = i => pad.l + i / (ys.length - 1) * (w - pad.l - pad.r);
+    const Y = v => pad.t + (hi - v) / Math.max(1e-9, hi - lo) * (h - pad.t - pad.b);
+    ctx.font = '11px "JetBrains Mono", monospace'; ctx.fillStyle = css('--muted');
+    for (const f of [0, 0.25, 0.5, 0.75, 1]) {
+      const v = lo + (hi - lo) * f;
+      ctx.strokeStyle = css('--grid'); ctx.beginPath(); ctx.moveTo(pad.l, Y(v)); ctx.lineTo(w - pad.r, Y(v)); ctx.stroke();
+      ctx.fillText(Math.round(v * 100) + '%', 6, Y(v) + 4);
+    }
+    for (const f of [0, 0.25, 0.5, 0.75, 1]) {
+      const s = a + (b - a) * f;
+      const txt = (s > 0 ? '+' : '') + Math.round(s) + 's', tw = ctx.measureText(txt).width;
+      ctx.fillText(txt, Math.max(pad.l - 6, Math.min(w - tw - 2, X(f * (ys.length - 1)) - tw / 2)), h - 6);
+    }
+    const grad = ctx.createLinearGradient(0, pad.t, 0, h - pad.b);
+    grad.addColorStop(0, css('--speech') + '55'); grad.addColorStop(1, css('--speech') + '00');
+    ctx.beginPath(); ys.forEach((v, i) => i ? ctx.lineTo(X(i), Y(v)) : ctx.moveTo(X(i), Y(v)));
+    ctx.lineTo(X(ys.length - 1), h - pad.b); ctx.lineTo(X(0), h - pad.b); ctx.closePath();
+    ctx.fillStyle = grad; ctx.fill();
+    ctx.beginPath(); ys.forEach((v, i) => i ? ctx.lineTo(X(i), Y(v)) : ctx.moveTo(X(i), Y(v)));
+    ctx.strokeStyle = css('--speech'); ctx.lineWidth = 1.5; ctx.stroke();
+    const bi = ys.indexOf(hi), bx = X(bi);
+    ctx.strokeStyle = css('--aligned'); ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(bx, pad.t); ctx.lineTo(bx, h - pad.b); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = css('--aligned'); ctx.beginPath(); ctx.arc(bx, Y(hi), 4, 0, 7); ctx.fill();
+    ctx.font = '600 11.5px Inter, sans-serif';
+    const label = signed(D.offset, 2);
+    const lw = ctx.measureText(label).width;
+    ctx.fillText(label, Math.min(bx + 8, w - pad.r - lw), pad.t + 10);
+  }
+
+  // ---------- candidates + segments
+  const cmin = Math.min(...D.candidates.map(c => c.coverage)), cmax = Math.max(...D.candidates.map(c => c.coverage));
+  D.candidates.slice(0, 10).forEach(c => {
+    const row = document.createElement('div');
+    row.className = 'cand' + (c.scale === D.scale ? ' win' : '');
+    const f = cmax > cmin ? 0.08 + 0.92 * (c.coverage - cmin) / (cmax - cmin) : 1;
+    row.innerHTML = `<span></span><div class="bar"><span style="width:${(f * 100).toFixed(1)}%"></span></div><span class="pct mono">${pct(c.coverage)}</span>`;
+    row.firstChild.textContent = c.label === 'none' ? 'unchanged (×1.0)' : c.label;
+    $('cands').appendChild(row);
+  });
+  const colors = ['--aligned', '--speech', '--warn', '--original'];
+  D.segments.forEach((s, i) => {
+    const tr = document.createElement('tr');
+    const start = D.original[s.first - 1][0] + D.corrections[s.first - 1];
+    tr.innerHTML = `<td><span class="dot" style="background:var(${colors[i % colors.length]})"></span>${s.first}–${s.last}</td><td class="mono">${clock(start)}</td><td class="mono">${signed(s.shift)}</td>`;
+    $('segs').appendChild(tr);
+  });
+
+  const all = () => { overviewCache = null; drawTimeline(); drawDrift(); drawCurve(); };
+  new ResizeObserver(all).observe(document.querySelector('.wrap'));
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', all);
+  clampView(); all();
+})();
+</script>
+</body>
+</html>

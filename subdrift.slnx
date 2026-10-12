@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Subdrift.Cli/Subdrift.Cli.fsproj" />
+    <Project Path="src/Subdrift.Core/Subdrift.Core.fsproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Subdrift.Tests/Subdrift.Tests.fsproj" />
+  </Folder>
+</Solution>

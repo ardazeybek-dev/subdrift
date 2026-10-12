@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet build -c Release
+      - run: dotnet test -c Release --no-build
+      - name: End-to-end demo
+        run: dotnet run -c Release --no-build --project src/Subdrift.Cli -- demo e2e
+      - uses: actions/upload-artifact@v4
+        if: matrix.os == 'ubuntu-latest'
+        with:
+          name: demo-report
+          path: e2e/report.html
+
+  audio-via-ffmpeg:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Align against an Opus-encoded copy of the demo audio
+        run: |
+          dotnet run -c Release --project src/Subdrift.Cli -- demo e2e
+          ffmpeg -v error -i e2e/movie.wav -c:a libopus e2e/movie.opus
+          dotnet run -c Release --project src/Subdrift.Cli -- sync e2e/movie.es.srt e2e/movie.opus --json -o e2e/out.srt | tee result.json
+          python3 -c "import json; r=json.load(open('result.json')); assert r['coverageAfter'] > 0.9, r"

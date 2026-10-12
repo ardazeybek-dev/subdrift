@@ -1,0 +1,27 @@
+# Build output
+bin/
+obj/
+artifacts/
+publish/
+*.nupkg
+
+# Secrets / local config
+.env
+.env.*
+!.env.example
+*.pfx
+*.key
+
+# Tooling
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+node_modules/
+TestResults/
+coverage/
+
+# Local scratch output
+out/
+*.report.html
